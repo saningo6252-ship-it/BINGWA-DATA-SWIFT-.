@@ -643,6 +643,15 @@ window.addEventListener("online", () => {
 });
 window.addEventListener("offline", updateConnectionStatus);
 
+// Register Service Worker for PWA / Android Wrapper Caching
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {
+      // Ignore registration error if unsupported in current context
+    });
+  });
+}
+
 // Boot
 updateConnectionStatus();
 initDownloadGate();

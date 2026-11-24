@@ -1,0 +1,25 @@
+{
+  "name": "Bingwa Sokoni Data Swift",
+  "short_name": "Bingwa Swift",
+  "description": "Browse Data, Minutes, SMS & Okoa offers across Safaricom, Airtel, Telkom & Faiba.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#e8f5e9",
+  "theme_color": "#2e7d32",
+  "icons": [
+    {
+      "src": "app_icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "app_icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

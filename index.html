@@ -1,282 +1,53 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bingwa Sokoni Data Swift</title>
-  <link rel="stylesheet" href="styles.css" />
-</head>
-<body>
-  <!-- DOWNLOAD / WHATSAPP LANDING GATE -->
-  <section id="downloadGate" class="download-gate hidden" aria-label="Download App">
-    <div class="download-card">
-      <div class="brand-badge">
-        <img
-          src="app_icon.png"
-          alt="Bingwa Data Swift Icon"
-          class="gate-logo"
-          onerror="this.style.display='none'; document.getElementById('gateFallback').style.display='grid';"
-        />
-        <div id="gateFallback" class="brand-icon-placeholder" style="display:none;">BS</div>
-        <div>
-          <h1>Bingwa Sokoni Data Swift</h1>
-          <p class="subtitle">Zero-Data Browsing • Instant Bundles</p>
-        </div>
-      </div>
+const CACHE_NAME = "bingwa-swift-v1";
+const CORE_ASSETS = [
+  "./",
+  "./index.html",
+  "./styles.css",
+  "./app.js",
+  "./offers.json",
+  "./app_icon.png",
+  "./manifest.json"
+];
 
-      <p class="gate-copy">
-        Browse discounted Data, Minutes, SMS &amp; Okoa-friendly offers anytime—even with <strong>0 MBs</strong> after installation.
-      </p>
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE_ASSETS))
+  );
+  self.skipWaiting();
+});
 
-      <ul class="gate-highlights">
-        <li>0 MB data needed to browse saved offers &amp; history</li>
-        <li>Offline USSD M-Pesa checkout + online STK Push</li>
-        <li>Instant offer &amp; promo updates on installed apps</li>
-      </ul>
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys
+          .filter((key) => key !== CACHE_NAME)
+          .map((key) => caches.delete(key))
+      )
+    )
+  );
+  self.clients.claim();
+});
 
-      <button id="downloadAppBtn" class="btn btn-primary btn-full" type="button">
-        Download App
-      </button>
-      <p id="downloadStatusMsg" class="helper-text"></p>
+self.addEventListener("fetch", (event) => {
+  if (event.request.method !== "GET") return;
 
-      <button id="openWebAppBtn" class="btn btn-ghost btn-full" type="button">
-        Open App Preview Now
-      </button>
-    </div>
-  </section>
-
-  <!-- MAIN APP SHELL -->
-  <div id="appShell" class="app-shell">
-    <!-- Top Header -->
-    <header class="app-header">
-      <div class="header-left">
-        <img
-          id="headerAppIcon"
-          src="app_icon.png"
-          alt="Bingwa Data Swift Icon"
-          class="app-logo"
-          onerror="this.style.display='none'; document.getElementById('fallbackLogo').style.display='flex';"
-        />
-        <div id="fallbackLogo" class="fallback-logo" style="display:none;">BS</div>
-        <div>
-          <div class="app-title">Bingwa Sokoni Data Swift</div>
-          <div id="connectionBadge" class="conn-pill offline">Offline Cache Mode (0 Data)</div>
-        </div>
-      </div>
-
-      <div class="header-right">
-        <button id="syncOffersBtn" class="btn btn-soft btn-sm" type="button" title="Sync latest offers when online">
-          Sync Offers
-        </button>
-        <button id="shareLinkBtn" class="btn btn-soft btn-sm" type="button" title="Copy WhatsApp Link">
-          WhatsApp Link
-        </button>
-      </div>
-    </header>
-
-    <!-- View 1: Home / Bundles Storefront -->
-    <main id="viewHome" class="view active">
-      <section class="ad-banner-box" aria-label="Promotional Offers">
-        <div id="adBannerDisplay" class="ad-banner-card">
-          <div class="ad-banner-text">
-            <span class="ad-tag">PROMO</span>
-            <h2 id="adBannerTitle">Swift Data Deals</h2>
-            <p id="adBannerSubtitle">Browse &amp; buy bundles even with zero data.</p>
-          </div>
-          <img id="adBannerImage" class="ad-banner-img hidden" alt="Promotional Banner" />
-        </div>
-        <div id="adDots" class="ad-dots"></div>
-      </section>
-
-      <div class="search-wrap">
-        <input id="bundleSearchInput" type="search" placeholder="Search bundles (e.g. 5GB, 100 SMS, Safaricom)..." />
-      </div>
-
-      <!-- Network Filter Tabs -->
-      <nav id="networkTabs" class="category-tabs" aria-label="Network Providers">
-        <button class="tab-btn net-btn active" data-network="All" type="button">All Networks</button>
-        <button class="tab-btn net-btn" data-network="Safaricom" type="button">Safaricom</button>
-        <button class="tab-btn net-btn" data-network="Airtel" type="button">Airtel</button>
-        <button class="tab-btn net-btn" data-network="Telkom" type="button">Telkom</button>
-        <button class="tab-btn net-btn" data-network="Faiba" type="button">Faiba</button>
-      </nav>
-
-      <!-- Category Filter Tabs -->
-      <nav id="categoryTabs" class="category-tabs" aria-label="Bundle Categories" style="padding-top:0;">
-        <button class="tab-btn cat-btn active" data-category="All" type="button">All</button>
-        <button class="tab-btn cat-btn" data-category="Data" type="button">Data</button>
-        <button class="tab-btn cat-btn" data-category="Minutes" type="button">Minutes</button>
-        <button class="tab-btn cat-btn" data-category="SMS" type="button">SMS</button>
-        <button class="tab-btn cat-btn" data-category="Okoa" type="button">Okoa</button>
-      </nav>
-
-      <section id="bundlesList" class="bundles-list" aria-live="polite"></section>
-    </main>
-
-    <!-- View 2: Transaction History -->
-    <main id="viewHistory" class="view">
-      <div class="section-head">
-        <h2>Transaction History</h2>
-        <span class="muted-note">Saved locally for zero-data viewing</span>
-      </div>
-      <div id="historyList" class="history-list"></div>
-    </main>
-
-    <!-- View 3: User Profile & Device Gallery Upload -->
-    <main id="viewProfile" class="view">
-      <div class="profile-card">
-        <div class="avatar-row">
-          <img id="profileAvatarImg" src="" alt="Profile Avatar" class="avatar-img hidden" />
-          <div id="profileAvatarFallback" class="avatar-fallback">U</div>
-          <div>
-            <h2 id="profileDisplayName">Swift Customer</h2>
-            <p id="profileDisplayPhone" class="muted-note">No phone set yet</p>
-            <label for="galleryPhotoInput" class="btn btn-primary btn-sm upload-label">
-              Upload from Gallery
-            </label>
-            <input id="galleryPhotoInput" type="file" accept="image/*" class="hidden" />
-          </div>
-        </div>
-
-        <form id="profileForm" class="stack-form">
-          <label>
-            Full Name
-            <input id="profileNameInput" type="text" placeholder="Enter your name" />
-          </label>
-          <label>
-            Phone Number (M-Pesa / Recipient)
-            <input id="profilePhoneInput" type="tel" placeholder="e.g. 0712345678" />
-          </label>
-          <button type="submit" class="btn btn-primary">Save Profile</button>
-          <p id="profileSaveMsg" class="helper-text"></p>
-        </form>
-      </div>
-
-      <div id="secretAdminTrigger" class="secret-footer-hint" title="System Info">
-        Bingwa Sokoni Data Swift • Offline-First Build
-      </div>
-    </main>
-
-    <!-- View 4: Restricted Admin Dashboard -->
-    <main id="viewAdmin" class="view">
-      <div class="admin-topbar">
-        <div>
-          <h2>Admin Dashboard</h2>
-          <p class="muted-note">Changes save to live catalog &amp; sync to installed apps</p>
-        </div>
-        <button id="adminLogoutBtn" class="btn btn-danger btn-sm" type="button">Lock Admin</button>
-      </div>
-
-      <section class="admin-card">
-        <h3>Payment &amp; USSD Settings</h3>
-        <div class="inline-row">
-          <input id="adminTillInput" type="text" placeholder="M-Pesa Till / Paybill Number" />
-          <button id="saveTillBtn" class="btn btn-primary btn-sm" type="button">Save Till</button>
-        </div>
-        <p id="adminTillMsg" class="helper-text"></p>
-      </section>
-
-      <section class="admin-card">
-        <h3>Upload Promotional Ad Banner</h3>
-        <form id="adminAdForm" class="stack-form">
-          <input id="adTitleInput" type="text" placeholder="Banner Headline (e.g. Weekend Mega Data)" required />
-          <input id="adSubtitleInput" type="text" placeholder="Short Promo Text (e.g. Valid 24 hrs, zero browsing data)" required />
-          <label class="file-box">
-            <span>Select Banner Image from Gallery</span>
-            <input id="adImageFileInput" type="file" accept="image/*" />
-          </label>
-          <button type="submit" class="btn btn-primary">Publish Ad Banner</button>
-          <p id="adminAdMsg" class="helper-text"></p>
-        </form>
-        <div id="adminAdsList" class="admin-items-list"></div>
-      </section>
-
-      <section class="admin-card">
-        <h3>Add or Update Bundle Offer</h3>
-        <form id="adminBundleForm" class="stack-form">
-          <input id="bundleIdInput" type="hidden" />
-          <div class="two-col">
-            <input id="bundleNameInput" type="text" placeholder="Bundle (e.g. 2.5GB)" required />
-            <select id="bundleCategoryInput">
-              <option value="Data">Data</option>
-              <option value="Minutes">Minutes</option>
-              <option value="SMS">SMS</option>
-              <option value="Okoa">Okoa</option>
-            </select>
-          </div>
-          <div class="two-col">
-            <input id="bundleValidityInput" type="text" placeholder="Validity (e.g. 24Hrs)" required />
-            <input id="bundlePriceInput" type="number" min="1" placeholder="Price (KES)" required />
-          </div>
-          <div class="inline-row">
-            <button type="submit" class="btn btn-primary">Save Offer</button>
-            <button id="resetBundleFormBtn" type="button" class="btn btn-soft">Clear</button>
-          </div>
-          <p id="adminBundleMsg" class="helper-text"></p>
-        </form>
-        <div id="adminBundlesList" class="admin-items-list"></div>
-      </section>
-
-      <section class="admin-card">
-        <h3>Recent Orders</h3>
-        <div id="adminOrdersList" class="admin-items-list"></div>
-      </section>
-    </main>
-
-    <!-- Bottom Navigation -->
-    <nav id="bottomNav" class="bottom-nav" aria-label="Primary Navigation">
-      <button class="nav-btn active" data-target="viewHome" type="button">Home</button>
-      <button class="nav-btn" data-target="viewHistory" type="button">History</button>
-      <button class="nav-btn" data-target="viewProfile" type="button">Profile</button>
-    </nav>
-  </div>
-
-  <!-- PURCHASE MODAL -->
-  <div id="purchaseModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalBundleTitle">
-    <div class="modal-card">
-      <div class="modal-head">
-        <h3 id="modalBundleTitle">Confirm Bundle</h3>
-        <button id="closePurchaseModal" class="icon-btn" type="button" aria-label="Close">&times;</button>
-      </div>
-      <p id="modalBundleMeta" class="muted-note"></p>
-
-      <form id="purchaseForm" class="stack-form">
-        <label>
-          Recipient Phone Number
-          <input id="recipientPhoneInput" type="tel" required placeholder="07XXXXXXXX" />
-        </label>
-        <label>
-          Payment Mode
-          <select id="paymentModeSelect">
-            <option value="auto">Auto (Offline USSD if 0 Data / STK if Online)</option>
-            <option value="ussd">Offline USSD M-Pesa (Zero Data)</option>
-            <option value="stk">Online M-Pesa STK Push</option>
-          </select>
-        </label>
-        <button id="confirmPayBtn" type="submit" class="btn btn-primary btn-full">Pay Now</button>
-        <p id="purchaseFeedback" class="helper-text"></p>
-      </form>
-    </div>
-  </div>
-
-  <!-- ADMIN LOGIN MODAL -->
-  <div id="adminAuthModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="adminAuthTitle">
-    <div class="modal-card">
-      <div class="modal-head">
-        <h3 id="adminAuthTitle">Admin Verification</h3>
-        <button id="closeAdminAuthModal" class="icon-btn" type="button" aria-label="Close">&times;</button>
-      </div>
-      <form id="adminAuthForm" class="stack-form">
-        <label>
-          Admin Passcode
-          <input id="adminPinInput" type="password" required placeholder="Enter admin PIN" />
-        </label>
-        <button type="submit" class="btn btn-primary btn-full">Unlock Dashboard</button>
-        <p id="adminAuthError" class="helper-text error-text"></p>
-      </form>
-    </div>
-  </div>
-
-  <script src="app.js"></script>
-</body>
-</html>
+  event.respondWith(
+    caches.match(event.request).then((cached) => {
+      if (cached) return cached;
+      return fetch(event.request)
+        .then((response) => {
+          if (
+            response &&
+            response.status === 200 &&
+            event.request.url.startsWith(self.location.origin)
+          ) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          }
+          return response;
+        })
+        .catch(() => caches.match("./index.html"));
+    })
+  );
+});
